@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mageai
+  namespace: develop
+  labels:
+    app: mageai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mageai
+  template:
+    metadata:
+      labels:
+        app: mageai
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: mageai
+          image: docker.io/zefko/mage_projects:1.1.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6789
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 6789
+            initialDelaySeconds: 5
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 6789
+            initialDelaySeconds: 5
+            timeoutSeconds: 1

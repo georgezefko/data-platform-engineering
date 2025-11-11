@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-svc
+  namespace: develop
+  labels:
+    app: zookeeper-app
+spec:
+  ports:
+    - name: '2181'
+      port: 2181
+      protocol: TCP
+      targetPort: 2181
+  selector:
+    app: zookeeper-app

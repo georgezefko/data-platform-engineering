@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-application-controller-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-applicationset-controller  # This is the name of the ClusterRole you created
+subjects:
+  - kind: ServiceAccount
+    name: argocd-application-controller   # The service account in Argo CD
+    namespace: develop                    # The namespace where Argo CD is running
