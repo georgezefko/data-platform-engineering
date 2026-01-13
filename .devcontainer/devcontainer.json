@@ -1,0 +1,33 @@
+{
+    "name": "local-kind-platform",
+    "build": { "dockerfile": "Dockerfile" },
+  
+    "features": {
+      "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+      "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+  
+    "containerEnv": {
+      "KUBECONFIG": "/home/vscode/.kube/config"
+    },
+  
+    "mounts": [
+      "source=${localWorkspaceFolder}/.kube,target=/home/vscode/.kube,type=bind"
+    ],
+  
+    "postCreateCommand": "bash scripts/check-tools.sh",
+  
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "hashicorp.terraform",
+          "ms-kubernetes-tools.vscode-kubernetes-tools",
+          "redhat.vscode-yaml"
+        ],
+        "settings": {
+          "terminal.integrated.defaultProfile.linux": "bash"
+        }
+      }
+    }
+  }
+  
