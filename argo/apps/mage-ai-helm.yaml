@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mage-ai-helm
+  namespace: argocd
+spec:
+  project: default
+
+  sources:
+    - repoURL: "https://mage-ai.github.io/helm-charts"
+      chart: mageai
+      targetRevision: "0.2.6"   # pick the version you want
+      helm:
+        releaseName: "mage-ai"
+        valueFiles:
+          - $values/apps/mage-ai-helm/dev/values.yaml
+
+    - repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
+      targetRevision: HEAD
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: develop
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
