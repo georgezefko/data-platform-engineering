@@ -6,6 +6,11 @@
       "ghcr.io/devcontainers/features/docker-in-docker:2": {},
       "ghcr.io/devcontainers/features/github-cli:1": {}
     },
+    "forwardPorts": [80, 443],
+    "portsAttributes": {
+      "80": { "label": "ingress http" },
+      "443": { "label": "ingress https" }
+    },
   
     "containerEnv": {
       "KUBECONFIG": "/home/vscode/.kube/config"
