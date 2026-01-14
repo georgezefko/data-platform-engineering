@@ -6,10 +6,9 @@
       "ghcr.io/devcontainers/features/docker-in-docker:2": {},
       "ghcr.io/devcontainers/features/github-cli:1": {}
     },
-    "forwardPorts": [80, 443],
+    "forwardPorts": [8081],
     "portsAttributes": {
-      "80": { "label": "ingress http" },
-      "443": { "label": "ingress https" }
+    "8081": { "label": "Argo CD UI" }
     },
   
     "containerEnv": {
