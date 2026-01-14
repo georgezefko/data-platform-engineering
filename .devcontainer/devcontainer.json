@@ -6,6 +6,10 @@
       "ghcr.io/devcontainers/features/docker-in-docker:2": {},
       "ghcr.io/devcontainers/features/github-cli:1": {}
     },
+    "forwardPorts": [8081],
+    "portsAttributes": {
+    "8081": { "label": "Argo CD UI" }
+    },
   
     "containerEnv": {
       "KUBECONFIG": "/home/vscode/.kube/config"
