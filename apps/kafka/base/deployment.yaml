@@ -33,6 +33,8 @@ spec:
               value: 'zookeeper-svc.develop.svc.cluster.local:2181'
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
               value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+            - name: KAFKA_PROCESS_ROLES
+              value: broker,controller
           volumeMounts:
             - name: data
               mountPath: /mnt/kafka
