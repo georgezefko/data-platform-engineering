@@ -2,14 +2,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kafka-app
+  name: postgres-app
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/georgezefko/kubernetes-roadmap.git'
+    repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
     targetRevision: HEAD  # Use the branch or commit you want ArgoCD to track
-    path: apps/kafka/dev       # Path to the dev folder in the Kafka component
+    path: apps/postgres/dev       # Path to the dev folder in the postgres component
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: develop   # Namespace where Kafka will be deployed
