@@ -29,6 +29,9 @@ argo-bootstrap:
 argo-ui:
 	@bash scripts/argocd-ui.sh
 
+mage-ui:
+	@bash scripts/mage-ui.sh
+
 status:
 	@echo "== Argo Applications =="
 	@kubectl get applications -n argocd || true
