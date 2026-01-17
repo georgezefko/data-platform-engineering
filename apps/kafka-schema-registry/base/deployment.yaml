@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: schema-registry-container
-          image: confluentinc/cp-schema-registry:latest
+          image: confluentinc/cp-schema-registry:7.6.1
           ports:
             - containerPort: 8081
           env:

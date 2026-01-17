@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: kafka-container
-          image: confluentinc/cp-kafka:7.5.0 #To avoid kraft
+          image: confluentinc/cp-kafka:7.6.1 #To avoid kraft
           ports:
             - containerPort: 9092
             - containerPort: 9093
