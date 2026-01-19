@@ -32,6 +32,9 @@ argo-ui:
 mage-ui:
 	@bash scripts/mage-ui.sh
 
+postgres-pf:
+	@bash scripts/postgrespf.sh
+
 status:
 	@echo "== Argo Applications =="
 	@kubectl get applications -n argocd || true
