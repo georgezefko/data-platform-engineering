@@ -5,6 +5,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+mkdir -p "${REPO_ROOT}/.kube"
+
 KIND_UP="${REPO_ROOT}/scripts/kind-up.sh"
 TF_DIR="${REPO_ROOT}/infra/terraform/environments/dev"
 ARGO_BOOTSTRAP="${REPO_ROOT}/argo/app-of-apps.yaml"
