@@ -4,4 +4,4 @@ metadata:
   name: postgres-config
 data:
   init.sql: |
-    -- CREATE DATABASE mage;
+    CREATE DATABASE mage;
