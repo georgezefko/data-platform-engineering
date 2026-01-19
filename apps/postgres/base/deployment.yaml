@@ -15,6 +15,13 @@ spec:
       containers:
       - name: postgres
         image: debezium/postgres:15
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         env:
         - name: POSTGRES_USER
           valueFrom:
@@ -36,7 +43,12 @@ spec:
         volumeMounts:
         - name: init-script
           mountPath: /docker-entrypoint-initdb.d
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
       volumes:
       - name: init-script
         configMap:
           name: postgres-config
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-data
