@@ -5,3 +5,13 @@ metadata:
 data:
   init.sql: |
     CREATE DATABASE mage;
+
+    CREATE TABLE telemetry (
+    device_id        TEXT NOT NULL,
+    ts               TIMESTAMPTZ NOT NULL,
+    energy_usage     NUMERIC(5,2),
+    temperature      NUMERIC(4,1),
+    vibration        NUMERIC(4,1),
+    signal_strength  INTEGER,
+    PRIMARY KEY (device_id, ts )
+    );

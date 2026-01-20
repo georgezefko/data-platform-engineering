@@ -67,7 +67,7 @@ image:
   repository: docker.io/zefko/mage_projects #ghcr.io/georgezefko/mage-projects
   pullPolicy: IfNotPresent #Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: 1.1.4
+  tag: 1.4.0
   pullSecrets:
    - name: regcred #ghcr-secret
 
@@ -145,7 +145,7 @@ customReadinessProbe: {}
 # There is a corresponding Mage-Ingress chart to create an ingress for Mage if needed.
 # This section is kept here for backwards compatibility.
 ingress:
-  enabled: true
+  enabled: false #true
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
@@ -206,7 +206,7 @@ persistence:
 config: {}
 
 # existingSecret: Specifies an existing secret to be used as environment variables. These get injected directly in the container.
-existingSecret: ""
+existingSecret: "mage-env"
 
 # secrets: Default secrets for mageai as environment variables. These get injected directly in the container.
 # Consider using a secret manager first, before sourcing secrets as environment variables.
@@ -214,6 +214,11 @@ secrets: {}
 
 # extraEnvs: Extra environment variable
 extraEnvs:
+  extraEnvs:
+  - name: ENV
+    value: dev
+  - name: LOG_LEVEL
+    value: INFO
   - name: KUBE_NAMESPACE
     valueFrom:
       fieldRef:

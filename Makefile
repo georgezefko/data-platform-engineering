@@ -35,6 +35,9 @@ mage-ui:
 postgres-pf:
 	@bash scripts/postgrespf.sh
 
+kafka-pf:
+	@bash scripts/kafka_pf.sh
+
 status:
 	@echo "== Argo Applications =="
 	@kubectl get applications -n argocd || true
