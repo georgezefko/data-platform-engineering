@@ -24,15 +24,24 @@ spec:
             - containerPort: 9093
           env:
             - name: KAFKA_BROKER_ID
-              value: '1'
-            - name: KAFKA_ADVERTISED_LISTENERS 
-              value: PLAINTEXT://kafka-svc.develop.svc.cluster.local:9093,PLAINTEXT_INTERNAL://localhost:9092
+              value: "1"
+
+            # Listen on 0.0.0.0:9092 for PLAINTEXT
+            - name: KAFKA_LISTENERS
+              value: PLAINTEXT://0.0.0.0:9092
+
+            # Advertise the *service DNS* and same port to clients
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: PLAINTEXT://kafka-svc.develop.svc.cluster.local:9092
+
             - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-              value: '1'
+              value: "1"
+
             - name: KAFKA_ZOOKEEPER_CONNECT
-              value: 'zookeeper-svc.develop.svc.cluster.local:2181'
+              value: "zookeeper-svc.develop.svc.cluster.local:2181"
+
             - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-              value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+              value: PLAINTEXT:PLAINTEXT
           volumeMounts:
             - name: data
               mountPath: /mnt/kafka
