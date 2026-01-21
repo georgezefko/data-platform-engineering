@@ -214,7 +214,6 @@ secrets: {}
 
 # extraEnvs: Extra environment variable
 extraEnvs:
-  extraEnvs:
   - name: ENV
     value: dev
   - name: LOG_LEVEL
