@@ -18,6 +18,8 @@ spec:
     - repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
       targetRevision: HEAD
       ref: values
+      path: apps/mage-ai-helm/dev
+    
 
   destination:
     server: https://kubernetes.default.svc
