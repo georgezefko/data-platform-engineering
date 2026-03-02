@@ -7,7 +7,7 @@ spec:
   project: default
 
   sources:
-    - repoURL: "airbyte-v2 https://airbytehq.github.io/charts"
+    - repoURL: "https://airbytehq.github.io/helm-charts"
       chart: airbyte
       targetRevision: "2.0.19"
       helm:
