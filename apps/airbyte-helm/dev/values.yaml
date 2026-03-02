@@ -1,0 +1,24 @@
+global:
+  edition: community
+  # optional; keep empty if you don't use ingress
+  airbyteUrl: ""
+
+# You need this, otherwise no UI
+webapp:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 80
+
+# Keep server/worker enabled (they already default true, but explicit doesn't hurt)
+server:
+  enabled: true
+
+worker:
+  enabled: true
+
+# Optional but recommended for local: avoid NodePort surprises
+# (your snippet shows connectorBuilderServer service defaults to NodePort)
+connectorBuilderServer:
+  service:
+    type: ClusterIP
