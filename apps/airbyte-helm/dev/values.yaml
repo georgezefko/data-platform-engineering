@@ -2,8 +2,7 @@ global:
   edition: community
   # optional; keep empty if you don't use ingress
   airbyteUrl: ""
-  image:
-    tag: "2.0.0"
+
 
 # You need this, otherwise no UI
 webapp:
@@ -11,7 +10,7 @@ webapp:
   image:
     repository: airbyte/webapp
     pullPolicy: IfNotPresent
-    tag: "2.0.0"
+    tag: "1.7.8"
   service:
     type: ClusterIP
     port: 80
