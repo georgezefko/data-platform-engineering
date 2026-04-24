@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka-connect-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
+    targetRevision: HEAD
+    path: apps/kafka-connect/dev
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: develop
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
