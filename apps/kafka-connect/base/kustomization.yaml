@@ -1,0 +1,5 @@
+resources:
+  - deployment.yaml
+  - service.yaml
+  - connector-configmap.yaml
+  - connector-job.yaml
