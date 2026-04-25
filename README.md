@@ -102,6 +102,6 @@ You can find the relevant code here: [turorial_one](https://github.com/georgezef
 
 This tutorial continues from the first one and provides a more automated way to deploy K8s locally.  I provide a step by step guide to deploy a local Kubernetes cluster using KinD and Terraform along with Argo CD for deployment orchestration of your apps. I demonstrate how to deploy Mage AI, Kafka and Postgres for end-to-end data pipeline development using Helm and Kustomize approaches.
 
-You can find relevant article with detailed guide here: TBA
+You can find relevant article with detailed guide here: [tutorial_two](https://medium.com/data-engineer-things/building-a-local-data-platform-with-kubernetes-and-terraform-9547a4256a7f)
 
 
