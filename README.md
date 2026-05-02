@@ -104,4 +104,12 @@ This tutorial continues from the first one and provides a more automated way to 
 
 You can find relevant article with detailed guide here: [tutorial_two](https://medium.com/data-engineer-things/building-a-local-data-platform-with-kubernetes-and-terraform-9547a4256a7f)
 
+### 3. Building a CDC Pipeline with Debezium and Kafka Connect on Local Kubernetes
+
+This tutorial extends the platform by adding Change Data Capture (CDC). It covers deploying Kafka Connect with the Debezium PostgreSQL connector, wiring the connector registration as a GitOps PostSync hook, and consuming live change events from the mage database.
+
+You can find the step-by-step guide here: [tutorial_three](tutorials/03-debezium-cdc-pipeline.md)
+
+You can find the relevant code here: [feat/debezium](https://github.com/georgezefko/data-platform-engineering/tree/feat/debezium)
+
 
