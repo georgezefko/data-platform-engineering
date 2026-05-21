@@ -1,0 +1,52 @@
+# Values for the kube-starrocks chart (operator + StarRocksCluster).
+# Reference values: https://github.com/StarRocks/starrocks-kubernetes-operator/blob/main/helm-charts/charts/kube-starrocks/values.yaml
+# Pinned chart version is set in argo/apps/starrocks-application.yaml.
+
+operator:
+  starrocksOperator:
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 500m
+        memory: 500Mi
+
+starrocks:
+  nameOverride: "starrocks"
+
+  initPassword:
+    enabled: false
+
+  starrocksCluster:
+    name: "starrocks"
+    enabledBe: true
+    enabledCn: false
+
+  # FE: 1 replica, modest CPU/mem, ephemeral storage (emptyDir).
+  starrocksFESpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    storageSpec:
+      name: ""
+
+  # BE: 1 replica, modest CPU/mem, ephemeral storage (emptyDir).
+  # BE tablet data is lost on pod restart — acceptable for dev.
+  starrocksBeSpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    storageSpec:
+      name: ""

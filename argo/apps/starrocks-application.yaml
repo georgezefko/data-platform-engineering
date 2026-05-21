@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: starrocks
+  namespace: argocd
+spec:
+  project: default
+
+  sources:
+    - repoURL: "https://starrocks.github.io/starrocks-kubernetes-operator"
+      chart: kube-starrocks
+      targetRevision: "1.11.4"
+      helm:
+        releaseName: "starrocks"
+        valueFiles:
+          - $values/apps/starrocks-helm/dev/values.yaml
+
+    - repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
+      targetRevision: HEAD
+      ref: values
+      path: apps/starrocks-helm/dev
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: develop
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
