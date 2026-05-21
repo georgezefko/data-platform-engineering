@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 CLUSTER_NAME ?= development
 TF_DIR := infra/terraform/environments/dev
 
-.PHONY: help up tf-init tf-apply argo-bootstrap argo-ui status reset kind-down kafka-connect-pf
+.PHONY: help up tf-init tf-apply argo-bootstrap argo-ui status reset kind-down kafka-connect-pf starrocks-pf
 
 help:
 	@echo "Targets:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make reset             - delete cluster + clean terraform state (local) + remove repo kubeconfig"
 	@echo "  make kind-down         - delete kind cluster only"
 	@echo "  make kafka-connect-pf  - port-forward Kafka Connect REST API (localhost:8083)"
+	@echo "  make starrocks-pf      - port-forward StarRocks FE (mysql localhost:9030, http localhost:8030)"
 
 up:
 	@bash scripts/bootstrap.sh
@@ -38,6 +39,9 @@ postgres-pf:
 
 kafka-connect-pf:
 	@bash scripts/kafka-connect-pf.sh
+
+starrocks-pf:
+	@bash scripts/starrocks-pf.sh
 
 status:
 	@echo "== Argo Applications =="
