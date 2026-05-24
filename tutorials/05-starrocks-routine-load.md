@@ -400,4 +400,88 @@ Always add `PROPERTIES("replication_num" = "1")` to `CREATE TABLE` in dev — on
 
 - **Decode binary fields** — `energy_usage`, `temperature`, `vibration` are base64 strings. Use `from_base64()` in a view or in the COLUMNS clause of the Routine Load to get the raw bytes, then interpret them according to your Postgres column type.
 - **Add more tables** — For each Debezium-captured table, repeat Steps 4–5: create a `<table>_events` table and a matching Routine Load job pointing at `mage.public.<table>`.
-- **Build the SCD2 layer** — Use the window-function queries above as the foundation for a materialized view or a scheduled StarRocks transform that produces the versioned dimension table.
+- **SCD2 layer** — Implemented in Step 8 as an async materialized view (`mage_cdc.telemetry_scd2`).
+
+---
+
+## Step 8 — SCD2 Materialized View
+
+Build a versioned dimension table on top of the event log. Each row represents one state of a device with a `valid_from_ms` / `valid_to_ms` interval. `valid_to_ms IS NULL` means the row is still current.
+
+```sql
+CREATE MATERIALIZED VIEW mage_cdc.telemetry_scd2
+REFRESH ASYNC
+AS
+SELECT
+  device_id,
+  signal_strength,
+  energy_usage,
+  temperature,
+  vibration,
+  op,
+  event_ts_ms                                           AS valid_from_ms,
+  LEAD(event_ts_ms) OVER (
+    PARTITION BY device_id ORDER BY event_ts_ms
+  )                                                     AS valid_to_ms,
+  CASE
+    WHEN LEAD(event_ts_ms) OVER (
+      PARTITION BY device_id ORDER BY event_ts_ms
+    ) IS NULL AND op != 'd'
+    THEN TRUE
+    ELSE FALSE
+  END                                                   AS is_current,
+  CASE
+    WHEN LEAD(event_ts_ms) OVER (
+      PARTITION BY device_id ORDER BY event_ts_ms
+    ) IS NULL AND op = 'd'
+    THEN TRUE
+    ELSE FALSE
+  END                                                   AS is_deleted
+FROM mage_cdc.telemetry_events;
+```
+
+| Choice | Reason |
+|---|---|
+| `REFRESH ASYNC` | StarRocks refreshes automatically when `telemetry_events` receives new rows — no manual trigger needed |
+| `is_current = TRUE` | Latest live state per device: `valid_to_ms IS NULL` and `op != 'd'` |
+| `is_deleted = TRUE` | Device was deleted: last event is a `d` row with no successor — mutually exclusive with `is_current` |
+| All metric columns included | Downstream consumers don't need to join back to the event log |
+
+Check the MV is active (allow a few seconds):
+
+```sql
+SHOW MATERIALIZED VIEWS\G
+```
+
+Look for `is_active: true`.
+
+### Queries
+
+**Current state of all devices:**
+```sql
+SELECT device_id, signal_strength, valid_from_ms
+FROM mage_cdc.telemetry_scd2
+WHERE is_current = TRUE;
+```
+
+**Full version history for a device:**
+```sql
+SELECT device_id, signal_strength, valid_from_ms, valid_to_ms, op
+FROM mage_cdc.telemetry_scd2
+WHERE device_id = 'device_3'
+ORDER BY valid_from_ms;
+```
+
+**Point-in-time state (what was device_3's state at a given ms timestamp):**
+```sql
+SELECT *
+FROM mage_cdc.telemetry_scd2
+WHERE device_id = 'device_3'
+  AND valid_from_ms <= 1779652068856
+  AND (valid_to_ms > 1779652068856 OR valid_to_ms IS NULL);
+```
+
+**Manual refresh (if needed):**
+```sql
+REFRESH MATERIALIZED VIEW mage_cdc.telemetry_scd2;
+```
