@@ -37,7 +37,12 @@ spec:
                   -d @/config/connector.json
                 echo "Connector registered."
               else
-                echo "Connector already exists (HTTP $STATUS), skipping registration."
+                echo "Connector exists (HTTP $STATUS), updating config..."
+                curl -X PUT \
+                  http://kafka-connect-svc.develop.svc.cluster.local:8083/connectors/postgres-connector/config \
+                  -H "Content-Type: application/json" \
+                  -d @/config/connector-config.json
+                echo "Connector config updated."
               fi
           volumeMounts:
             - name: connector-config
