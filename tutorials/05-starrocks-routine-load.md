@@ -156,6 +156,21 @@ mysql -h127.0.0.1 -P9030 -uroot
 
 ## Step 4 — Create the database and event log table
 
+### 4a — Ensure Postgres columns are `DOUBLE PRECISION`
+
+`energy_usage`, `temperature`, and `vibration` must be `DOUBLE PRECISION` in Postgres so Debezium emits them as JSON float numbers. If they are currently `bytea`, migrate them first (connect via `make postgres-pf` then `psql -h127.0.0.1 -U postgres -d mage`):
+
+```sql
+ALTER TABLE public.telemetry
+  ALTER COLUMN energy_usage TYPE DOUBLE PRECISION USING NULL,
+  ALTER COLUMN temperature   TYPE DOUBLE PRECISION USING NULL,
+  ALTER COLUMN vibration     TYPE DOUBLE PRECISION USING NULL;
+```
+
+`DOUBLE PRECISION` is sent as a plain JSON number by Debezium — no base64 encoding, no decoding needed downstream.
+
+### 4b — Create the StarRocks database and event log table
+
 ```sql
 CREATE DATABASE IF NOT EXISTS mage_cdc;
 USE mage_cdc;
@@ -175,9 +190,9 @@ CREATE TABLE IF NOT EXISTS telemetry_events (
   op              VARCHAR(1),
   device_id       VARCHAR(64),
   ts              VARCHAR(40),
-  energy_usage    VARCHAR(20),
-  temperature     VARCHAR(20),
-  vibration       VARCHAR(20),
+  energy_usage    DOUBLE,
+  temperature     DOUBLE,
+  vibration       DOUBLE,
   signal_strength INT
 )
 DUPLICATE KEY(event_ts_ms, op, device_id)
@@ -193,7 +208,7 @@ PROPERTIES("replication_num" = "1");
 | `event_ts_ms` | Unix millisecond timestamp from Debezium (`__ts_ms`). First key column for efficient time-range queries |
 | `op` VARCHAR(1) | Stores `c` / `u` / `d` / `r` — the operation type from Debezium |
 | `ts` VARCHAR(40) | The device timestamp as an ISO 8601 string. Stored as-is; cast to DATETIME(6) in views or downstream if needed |
-| `energy_usage`, `temperature`, `vibration` VARCHAR | Postgres `bytea` → base64 strings. Decode with `from_base64()` downstream |
+| `energy_usage`, `temperature`, `vibration` DOUBLE | Postgres `DOUBLE PRECISION` → Debezium emits as a JSON float number, stored directly as `DOUBLE` |
 | `replication_num = 1` | Required — only one BE in the dev cluster |
 
 ---
@@ -261,7 +276,7 @@ psql -h127.0.0.1 -U postgres -d mage
 ```sql
 -- INSERT → __op = 'c'
 INSERT INTO public.telemetry (device_id, ts, energy_usage, temperature, vibration, signal_strength)
-VALUES ('test_device', now(), '\x01'::bytea, '\x02'::bytea, '\x03'::bytea, 50);
+VALUES ('test_device', now(), 1.5, 22.3, 0.7, 50);
 
 -- UPDATE → __op = 'u'  (payload = new row state)
 UPDATE public.telemetry SET signal_strength = 99 WHERE device_id = 'test_device';
@@ -394,11 +409,35 @@ STOP ROUTINE LOAD FOR mage_cdc.load_telemetry;
 
 Always add `PROPERTIES("replication_num" = "1")` to `CREATE TABLE` in dev — only one BE is available.
 
+### `Consume offset X is greater than the latest offset Y`
+
+The job's checkpointed Kafka offset no longer exists — the topic was likely deleted/recreated or messages expired while StarRocks FE retained the old offset checkpoint. Stop and recreate the job to reset to `OFFSET_END`:
+
+```sql
+STOP ROUTINE LOAD FOR mage_cdc.load_telemetry;
+
+CREATE ROUTINE LOAD mage_cdc.load_telemetry ON telemetry_events
+COLUMNS(event_ts_ms, op, device_id, ts, energy_usage, temperature, vibration, signal_strength)
+PROPERTIES (
+  "format"                    = "json",
+  "jsonpaths"                 = "[\"$.__ts_ms\",\"$.__op\",\"$.device_id\",\"$.ts\",\"$.energy_usage\",\"$.temperature\",\"$.vibration\",\"$.signal_strength\"]",
+  "desired_concurrent_number" = "1"
+)
+FROM KAFKA (
+  "kafka_broker_list"              = "kafka-svc.develop.svc.cluster.local:9092",
+  "kafka_topic"                    = "mage.public.telemetry",
+  "property.group.id"              = "starrocks-telemetry-loader",
+  "property.kafka_default_offsets" = "OFFSET_END"
+);
+```
+
+`ALTER ROUTINE LOAD ... FROM KAFKA` is not supported in this StarRocks version — stop + recreate is the reliable path.
+
 ---
 
 ## What's next
 
-- **Decode binary fields** — `energy_usage`, `temperature`, `vibration` are base64 strings. Use `from_base64()` in a view or in the COLUMNS clause of the Routine Load to get the raw bytes, then interpret them according to your Postgres column type.
+- **Numeric fields** — `energy_usage`, `temperature`, `vibration` are stored as `DOUBLE PRECISION` in Postgres. Debezium emits them as plain JSON floats and StarRocks ingests them directly as `DOUBLE` — no decoding required.
 - **Add more tables** — For each Debezium-captured table, repeat Steps 4–5: create a `<table>_events` table and a matching Routine Load job pointing at `mage.public.<table>`.
 - **SCD2 layer** — Implemented in Step 8 as an async materialized view (`mage_cdc.telemetry_scd2`).
 
