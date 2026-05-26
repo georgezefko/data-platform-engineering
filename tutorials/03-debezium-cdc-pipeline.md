@@ -383,35 +383,22 @@ PostgreSQL only sends those rows over the replication stream — more efficient 
 
 **Root cause:** In dev the internal Connect topics (`debezium_connect_configs`, `debezium_connect_offsets`, `debezium_connect_statuses`) use `replication.factor=1`. A single-node Kafka losing its PVC wipes those topics. Kafka Connect reloads connector config from its internal topics on startup — if the topics are empty, all connectors are gone.
 
-The PostSync Job only re-runs on Argo CD sync events, not on Kafka restarts.
+**This is handled automatically.** The Kafka Connect Deployment has a `postStart` lifecycle hook that waits for the REST API to be ready and then registers (or updates) the connector on every pod start. No manual curl needed.
 
-**Immediate fix — re-register manually:**
+If you need to force re-registration manually (e.g. for debugging), restart the pod:
+
+```bash
+kubectl rollout restart deployment kafka-connect -n develop
+```
+
+Then verify:
 
 ```bash
 make kafka-connect-pf
 # in another terminal:
-curl -X POST http://localhost:8083/connectors \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "postgres-connector",
-    "config": {
-      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-      "database.hostname": "postgres.develop.svc.cluster.local",
-      "database.port": "5432",
-      "database.user": "postgres",
-      "database.password": "postgres",
-      "database.dbname": "mage",
-      "topic.prefix": "mage",
-      "plugin.name": "pgoutput",
-      "slot.name": "debezium_slot",
-      "publication.name": "debezium_publication",
-      "schema.history.internal.kafka.bootstrap.servers": "kafka-svc.develop.svc.cluster.local:9092",
-      "schema.history.internal.kafka.topic": "schema-changes.mage"
-    }
-  }'
+curl http://localhost:8083/connectors
+# should return ["postgres-connector"]
 ```
-
-**Production fix:** Add a sidecar or init container to Kafka Connect that always POSTs the connector config on startup, rather than relying solely on the PostSync Job.
 
 ### Connector created but no topics appear
 
