@@ -19,6 +19,31 @@ data:
         "slot.name": "debezium_slot",
         "publication.name": "debezium_publication",
         "schema.history.internal.kafka.bootstrap.servers": "kafka-svc.develop.svc.cluster.local:9092",
-        "schema.history.internal.kafka.topic": "schema-changes.mage"
+        "schema.history.internal.kafka.topic": "schema-changes.mage",
+        "transforms": "unwrap",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.unwrap.add.fields": "op,ts_ms",
+        "transforms.unwrap.delete.handling.mode": "rewrite",
+        "transforms.unwrap.drop.tombstones": "true"
       }
+    }
+  connector-config.json: |
+    {
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "database.hostname": "postgres.develop.svc.cluster.local",
+      "database.port": "5432",
+      "database.user": "postgres",
+      "database.password": "postgres",
+      "database.dbname": "mage",
+      "topic.prefix": "mage",
+      "plugin.name": "pgoutput",
+      "slot.name": "debezium_slot",
+      "publication.name": "debezium_publication",
+      "schema.history.internal.kafka.bootstrap.servers": "kafka-svc.develop.svc.cluster.local:9092",
+      "schema.history.internal.kafka.topic": "schema-changes.mage",
+      "transforms": "unwrap",
+      "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+      "transforms.unwrap.add.fields": "op,ts_ms",
+      "transforms.unwrap.delete.handling.mode": "rewrite",
+      "transforms.unwrap.drop.tombstones": "true"
     }
