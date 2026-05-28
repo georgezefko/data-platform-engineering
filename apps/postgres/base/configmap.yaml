@@ -5,3 +5,16 @@ metadata:
 data:
   init.sql: |
     CREATE DATABASE mage;
+    \c mage
+
+    CREATE TABLE IF NOT EXISTS public.telemetry (
+      device_id       VARCHAR(64),
+      ts              TIMESTAMPTZ,
+      energy_usage    DOUBLE PRECISION,
+      temperature     DOUBLE PRECISION,
+      vibration       DOUBLE PRECISION,
+      signal_strength INT,
+      PRIMARY KEY (device_id, ts)
+    );
+
+    ALTER TABLE public.telemetry REPLICA IDENTITY FULL;
