@@ -294,12 +294,11 @@ In a browser, open http://localhost:8030. Username `root`, empty password (becau
 
 The cluster is up but nothing is loading data into it yet. The next tutorial wires Debezium → StarRocks via **Routine Load**:
 
-1. Add the `ExtractNewRecordState` SMT to the existing Debezium connector config so messages are flat JSON instead of the `{before, after, op, source}` envelope.
-2. Create a target table in StarRocks using the **Primary Key model** (CDC upserts/deletes).
-3. Submit a `CREATE ROUTINE LOAD` statement that consumes the `mage.public.<table>` topic.
-4. Insert/update/delete in Postgres, verify the changes propagate end-to-end.
+1. Create a target table in StarRocks using the **Duplicate Key model** (append-only event log — all INSERT/UPDATE/DELETE events preserved as separate rows).
+2. Submit a `CREATE ROUTINE LOAD` statement that consumes the `mage.public.telemetry` topic.
+3. Insert/update/delete in Postgres, verify the changes propagate end-to-end.
 
-Optionally, that can be packaged as a PostSync Job under `apps/starrocks-helm/dev/` so the database, table, and Routine Load bootstrap automatically on every sync — fully GitOps.
+The `ExtractNewRecordState` SMT is already configured in `apps/kafka-connect/base/connector-configmap.yaml` — messages on the topic are already flat JSON with `__op` and `__ts_ms` metadata fields. No connector changes are needed before starting Tutorial 5.
 
 ---
 
