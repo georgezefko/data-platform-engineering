@@ -76,45 +76,21 @@ The result is a consistent flat message for every event type:
 
 ---
 
-## Step 1 — Apply the SMT to the running connector
+## Step 1 — Verify the SMT is active
 
-The `ExtractNewRecordState` SMT has already been added to `apps/kafka-connect/base/connector-configmap.yaml` in the GitOps config. The Argo PostSync Job will apply it automatically on the next sync.
+The `ExtractNewRecordState` SMT is already configured in `apps/kafka-connect/base/connector-configmap.yaml`. On a fresh cluster the `postStart` lifecycle hook on the Kafka Connect pod registers the connector with the SMT included — no manual step required.
 
-To apply it immediately without waiting for a sync, use the Kafka Connect REST API directly:
+Confirm the active connector config contains the transform:
 
 ```bash
-# In a separate terminal
 make kafka-connect-pf
+# in another terminal:
+curl -s http://localhost:8083/connectors/postgres-connector/config | grep transforms
 ```
 
-Then in another terminal:
+You should see `"transforms": "unwrap"` in the output.
 
-```bash
-curl -X PUT \
-  http://localhost:8083/connectors/postgres-connector/config \
-  -H "Content-Type: application/json" \
-  -d '{
-    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "database.hostname": "postgres.develop.svc.cluster.local",
-    "database.port": "5432",
-    "database.user": "postgres",
-    "database.password": "postgres",
-    "database.dbname": "mage",
-    "topic.prefix": "mage",
-    "plugin.name": "pgoutput",
-    "slot.name": "debezium_slot",
-    "publication.name": "debezium_publication",
-    "schema.history.internal.kafka.bootstrap.servers": "kafka-svc.develop.svc.cluster.local:9092",
-    "schema.history.internal.kafka.topic": "schema-changes.mage",
-    "transforms": "unwrap",
-    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
-    "transforms.unwrap.add.fields": "op,ts_ms",
-    "transforms.unwrap.delete.handling.mode": "rewrite",
-    "transforms.unwrap.drop.tombstones": "true"
-  }'
-```
-
-Verify the SMT is active by consuming a new message from the topic — it should now be flat:
+Then verify messages on the topic are flat by inserting a test row in Postgres and consuming it:
 
 ```bash
 kubectl exec -it -n develop kafka-0 -- \
@@ -124,9 +100,15 @@ kubectl exec -it -n develop kafka-0 -- \
   --max-messages 1
 ```
 
-You should see a flat JSON object (no `before`/`after` wrapper, `__op` present).
+You should see a flat JSON object — no `before`/`after` wrapper, `__op` and `__ts_ms` present at the top level.
 
-> **Note on existing messages in the topic:** Messages produced before the SMT was applied remain in the old envelope format. The Routine Load will start from `OFFSET_END` (only new messages), so only flat-format messages are loaded. The old messages stay in Kafka until the topic's retention period expires — they are not consumed by StarRocks.
+> **If the connector was registered before the SMT was added** (e.g. an older cluster), force a config update:
+> ```bash
+> kubectl rollout restart deployment kafka-connect -n develop
+> ```
+> The `postStart` hook will run a PUT with the current ConfigMap, which includes the SMT.
+
+> **Note on existing messages in the topic:** Messages produced before the SMT was applied remain in the old envelope format. The Routine Load starts from `OFFSET_END` (only new messages), so only flat-format messages are loaded.
 
 ---
 
@@ -156,9 +138,19 @@ mysql -h127.0.0.1 -P9030 -uroot
 
 ## Step 4 — Create the database and event log table
 
-### 4a — Ensure Postgres columns are `DOUBLE PRECISION`
+### 4a — Verify Postgres column types
 
-`energy_usage`, `temperature`, and `vibration` must be `DOUBLE PRECISION` in Postgres so Debezium emits them as JSON float numbers. If they are currently `bytea`, migrate them first (connect via `make postgres-pf` then `psql -h127.0.0.1 -U postgres -d mage`):
+The `telemetry` table is created by `apps/postgres/base/configmap.yaml` with `energy_usage`, `temperature`, and `vibration` as `DOUBLE PRECISION`. On a fresh cluster these are already correct — Debezium emits them as plain JSON floats and no decoding is needed.
+
+To confirm:
+
+```bash
+make postgres-pf
+psql -h127.0.0.1 -U postgres -d mage \
+  -c "\d public.telemetry"
+```
+
+If for any reason the columns show as `bytea` (an older deployment), migrate them:
 
 ```sql
 ALTER TABLE public.telemetry
@@ -166,8 +158,6 @@ ALTER TABLE public.telemetry
   ALTER COLUMN temperature   TYPE DOUBLE PRECISION USING NULL,
   ALTER COLUMN vibration     TYPE DOUBLE PRECISION USING NULL;
 ```
-
-`DOUBLE PRECISION` is sent as a plain JSON number by Debezium — no base64 encoding, no decoding needed downstream.
 
 ### 4b — Create the StarRocks database and event log table
 
@@ -260,16 +250,73 @@ LIMIT 10;
 
 ---
 
-## Step 7 — End-to-end test with all operation types
+## Step 7 — Generate streaming data with Mage AI
+
+The platform includes two Mage AI pipelines for generating and ingesting realistic IoT data:
+
+| Pipeline | Role |
+|---|---|
+| `lambda_iot_data_generator` | Produces fake IoT sensor readings to a message queue |
+| `streaming_tutorial` | Consumes those messages and writes them into `public.telemetry` in Postgres |
+
+Once rows land in Postgres, Debezium picks them up from the WAL and they flow through to StarRocks automatically.
+
+### 7a — Port-forward Mage AI
 
 ```bash
-# Port-forward Postgres
-make postgres-pf
+make mage-ui
 ```
 
-In a separate terminal run the following SQL against Postgres to trigger each operation type:
+This forwards `svc/mageai` port 6789 to `localhost:6789`. Keep this terminal open.
+
+### 7b — Run the data generator
+
+Open http://localhost:6789 in a browser.
+
+1. In the left sidebar click **Pipelines**
+2. Click `lambda_iot_data_generator`
+3. Click **Run pipeline now** (the ▶ button in the top-right)
+4. Wait for the run to complete — it takes a few seconds and you will see a green checkmark on the run
+
+This pipeline generates a batch of fake IoT sensor readings (random `device_id`, timestamps, `energy_usage`, `temperature`, `vibration`, `signal_strength`).
+
+### 7c — Run the streaming consumer
+
+Back in the Pipelines list:
+
+1. Click `streaming_tutorial`
+2. Click **Run pipeline now**
+3. Wait for the run to complete
+
+This pipeline consumes the messages produced by the generator and inserts them as rows into `public.telemetry` in the `mage` Postgres database.
+
+### 7d — Verify rows reached StarRocks
+
+Allow 5–10 seconds for Routine Load to pick up the new messages, then in the StarRocks session:
+
+```sql
+SELECT COUNT(*) FROM mage_cdc.telemetry_events;
+
+-- Break down by operation type
+SELECT op, COUNT(*) FROM mage_cdc.telemetry_events GROUP BY op;
+
+-- Most recent events
+SELECT event_ts_ms, op, device_id, signal_strength
+FROM mage_cdc.telemetry_events
+ORDER BY event_ts_ms DESC
+LIMIT 10;
+```
+
+You should see rows with `op = 'c'` (INSERT events from the batch). Running the two pipelines multiple times will accumulate more rows in the event log.
+
+---
+
+### Alternative — manual SQL test (quick smoke test)
+
+If you want to trigger all three operation types (`c`, `u`, `d`) without Mage AI:
 
 ```bash
+make postgres-pf
 psql -h127.0.0.1 -U postgres -d mage
 ```
 
@@ -285,7 +332,7 @@ UPDATE public.telemetry SET signal_strength = 99 WHERE device_id = 'test_device'
 DELETE FROM public.telemetry WHERE device_id = 'test_device';
 ```
 
-Then in StarRocks, all three events should appear as separate rows:
+Then in StarRocks:
 
 ```sql
 SELECT event_ts_ms, op, device_id, signal_strength
@@ -294,7 +341,7 @@ WHERE device_id = 'test_device'
 ORDER BY event_ts_ms;
 ```
 
-Expected result — three rows:
+Expected — three rows:
 
 ```
 event_ts_ms        op   device_id    signal_strength
