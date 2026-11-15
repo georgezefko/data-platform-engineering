@@ -5,6 +5,8 @@
 #   airflow-keys:    fernet/API/JWT keys. Created once, never rotated by a re-run (a new fernet key
 #                    would make stored connections unreadable).
 set -euo pipefail
+# 32 random bytes, url-safe base64: the fernet key format (also fine for the API/JWT keys)
+key() { head -c 32 /dev/urandom | base64 | tr '+/' '-_'; }
 ADC="${ADC:-$HOME/.config/gcloud/application_default_credentials.json}"
 [[ -f "$ADC" ]] || { echo "No ADC file at $ADC. Run: gcloud auth application-default login" >&2; exit 1; }
 
@@ -16,8 +18,8 @@ for ns in develop prod; do
 
   if ! kubectl -n "$ns" get secret airflow-keys >/dev/null 2>&1; then
     kubectl -n "$ns" create secret generic airflow-keys \
-      --from-literal=fernet-key="$(python3 -c 'import base64,os;print(base64.urlsafe_b64encode(os.urandom(32)).decode())')" \
-      --from-literal=api-secret-key="$(openssl rand -hex 32)" \
-      --from-literal=jwt-secret="$(openssl rand -hex 32)"
+      --from-literal=fernet-key="$(key)" \
+      --from-literal=api-secret-key="$(key)" \
+      --from-literal=jwt-secret="$(key)"
   fi
 done

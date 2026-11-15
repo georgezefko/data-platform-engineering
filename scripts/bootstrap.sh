@@ -11,7 +11,7 @@ KIND_UP="${REPO_ROOT}/scripts/kind-up.sh"
 TF_DIR="${REPO_ROOT}/infra/terraform/environments/dev"
 ARGO_BOOTSTRAP="${REPO_ROOT}/argo/app-of-apps.yaml"
 
-if [[ ! -x "${KIND_UP}" ]]; then
+if [[ ! -f "${KIND_UP}" ]]; then
   echo "ERROR: kind-up script not found or not executable: ${KIND_UP}" >&2
   echo "Repo root: ${REPO_ROOT}" >&2
   echo "Contents of scripts/:" >&2
