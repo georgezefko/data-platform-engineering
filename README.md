@@ -162,3 +162,9 @@ Step-by-step references:
 - [Debezium + Kafka Connect setup](tutorials/03-debezium-cdc-pipeline.md)
 - [Adding StarRocks as a CDC sink](tutorials/04-starrocks-cdc-sink.md)
 - [StarRocks Routine Load — CDC event log](tutorials/05-starrocks-routine-load.md)
+
+### 4. Deploying Airflow (WIP)
+
+Airflow 3 in two environments (dev and prod) from the official Helm chart, with DAGs pulled at runtime from the `airflow-monorepo` repo as Git bundles.
+
+- [Deploying Airflow on the local platform](tutorials/06-airflow-deployment.md)
