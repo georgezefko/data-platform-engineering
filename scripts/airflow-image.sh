@@ -15,5 +15,9 @@ fi
 gcloud auth configure-docker "$REGISTRY" --quiet
 for tag in $TAGS; do
   docker pull "$IMAGE:$tag"
-  kind load docker-image "$IMAGE:$tag" --name development
+  # Not `kind load docker-image`: it imports --all-platforms, which fails on multi-arch
+  # images when Docker's containerd store only pulled the local platform's layers.
+  for node in $(kind get nodes --name development); do
+    docker save "$IMAGE:$tag" | docker exec -i "$node" ctr --namespace=k8s.io images import --snapshotter=overlayfs -
+  done
 done
