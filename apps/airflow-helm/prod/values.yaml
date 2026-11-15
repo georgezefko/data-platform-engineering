@@ -1,0 +1,20 @@
+# Prod: each team pinned to its release tag. A release = change that team's tracking_ref, nothing else.
+images:
+  airflow:
+    tag: d74679672269a6e09c176192ad4699e82ea444ae  # promoted from dev by hand
+
+data:
+  metadataConnection:
+    db: airflow_prod
+
+dagProcessor:
+  dagBundleConfigList:
+    - name: platform
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/platform/dags}  # no platform-v* tag yet
+    - name: sales
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: sales-v1.0.1, subdir: teams/sales/dags}
+    - name: marketing
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/marketing/dags}  # no marketing-v* tag yet
