@@ -1,12 +1,11 @@
-# Creates the Airflow metadata databases. Runs after every sync; skips databases that exist.
+# Creates the Airflow metadata databases; skips databases that exist.
 # (init.sql only runs on an empty volume, so it can't add databases to an existing cluster.)
+# A plain resource, not a hook: hooks don't count toward sync status, so on an already-synced
+# postgres-app a new hook never fires. Job spec is immutable: if you edit it, delete the Job first.
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: airflow-db-init
-  annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 10
   template:
