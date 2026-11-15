@@ -1,6 +1,6 @@
 # Deploying Airflow on the Local Platform (WIP)
 
-> **Work in progress.** This covers what is built on the `feat/airflow` branch so far. The Argo CD sync, first login and running a DAG end to end have not been verified yet. See [Status](#status) at the bottom.
+> **Work in progress.** Dev deploys and runs healthy. First login, DAG runs and prod have not been verified yet. See [Status](#status) at the bottom.
 
 This tutorial adds Apache Airflow 3 to the platform as two environments, **dev** and **prod**, both deployed by Argo CD from the official Helm chart. DAGs are not stored in this repo or baked into the image: they live in a separate repo, [`airflow-monorepo`](https://github.com/georgezefko/airflow-monorepo), and Airflow pulls them at runtime as **Git DAG bundles**, one per team.
 
@@ -103,6 +103,42 @@ Two Secrets are created by a script rather than committed. Argo doesn't manage t
 - **`airflow-gcp-adc`**: your gcloud Application Default Credentials, mounted at `/opt/gcp/adc.json` in every component and task pod (`GOOGLE_APPLICATION_CREDENTIALS`), so DAGs can reach BigQuery.
 - **`airflow-keys`**: the fernet, API and JWT keys. If the chart generated them, Argo would rotate them on every sync, and a new fernet key would make stored connections unreadable. The script creates them once and never rotates them.
 
+### Probes sized for a crowded kind node
+
+Airflow 3 is slow to start: every component imports all of Airflow, and the scheduler also imports the DAGs' libraries (Cosmos/dbt). On one kind node shared with the rest of the platform, the chart's default probes killed the pods before they were up. The api-server failed its startup probe with `connection refused` and exited with code 143. The scheduler failed with `No alive jobs found`. Each restart booted Airflow again, which kept the node's CPU high and made the next start even slower.
+
+`apps/airflow-helm/common/values.yaml` gives both components more room:
+
+```yaml
+config:
+  api:
+    workers: 1  # default 4: each worker imports all of Airflow at startup
+apiServer:
+  startupProbe:
+    periodSeconds: 10
+    timeoutSeconds: 20
+    failureThreshold: 30  # up to 5 min to come up
+scheduler:
+  startupProbe:  # default gave up after ~1-2 min; boot (cosmos/dbt imports) takes longer
+    periodSeconds: 10
+    timeoutSeconds: 60
+    failureThreshold: 30
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 60
+    timeoutSeconds: 60
+    failureThreshold: 5
+```
+
+While a rollout is in progress, the old pods keep crash-looping until the new ones are Ready. That's normal: judge by the newest pods.
+
+### Image vs. bundles: what a release changes
+
+- **The image is the runtime:** Airflow, Python packages, providers. Dev and prod each pin their own tag. Every task pod uses that image.
+- **Bundles are the DAG code**, pulled from Git. Airflow 3 records the bundle version a DAG run started on, so a push mid-run doesn't mix old and new code.
+
+A DAG-only release changes a team's `tracking_ref` and nothing else. A release that needs a new or upgraded Python package also needs a new image: build it, load it into kind, bump the tag (dev first, then prod), and only then move prod's `tracking_ref`. Otherwise the DAG fails with an import error. Prod has one image for every team, so an image bump is a platform change: keep it backward compatible.
+
 ---
 
 ## Step by step
@@ -151,11 +187,25 @@ In both `develop` and `prod`, this creates the namespace if it's missing, applie
 
 ### 4. Deploy through Argo CD
 
-Argo CD tracks `main`, so the Airflow apps only appear after `feat/airflow` is merged. Then:
+Argo CD tracks `main`, so changes only reach the cluster once they're merged. Then:
 
 ```bash
 make argo-bootstrap
 ```
+
+Running everything at once (Kafka, StarRocks, Airbyte and both Airflow environments) is heavy for one kind node. To run only what Airflow dev needs:
+
+```bash
+make argo-bootstrap APPS="postgres airflow-dev"
+```
+
+`APPS` also works with `make up`, and `make argo-bootstrap` with no `APPS` brings everything back. Names match files in `argo/apps/` whose name contains them, and dependencies are not added for you: Airflow needs `postgres`. Under the hood, `scripts/argo-apps.sh` sets a `directory.include` filter on the app-of-apps. Every child Application carries the `resources-finalizer.argocd.argoproj.io` finalizer, so a removed app's workloads are deleted too. The Postgres PVC has `argocd.argoproj.io/sync-options: Delete=false`, so turning Postgres off keeps its data.
+
+> **Gotcha:** the finalizer only works if it is already on the Application when the app is removed. The first time, `APPS=` ran right after the merge, before Argo had synced the finalizers onto the child apps. Their Applications were deleted, but the pods kept running, orphaned. The fix was to run `make argo-bootstrap` (all apps), wait until every app showed the finalizer, then filter again:
+>
+> ```bash
+> kubectl get applications -n argocd -o custom-columns=NAME:.metadata.name,FINALIZERS:.metadata.finalizers,SYNC:.status.sync.status
+> ```
 
 ```bash
 make status
@@ -170,6 +220,14 @@ make airflow-ui ENV=dev
 ```
 
 Dev is at http://localhost:8081, prod (`ENV=prod`) at http://localhost:8082. Log in as `admin` / `admin`.
+
+If it fails with `bind: address already in use`, an earlier port-forward is still running, often in another terminal. Stop it and retry:
+
+```bash
+pkill -f "port-forward svc/airflow-api-server"
+```
+
+If something else owns the port, `lsof -i :8081` shows what.
 
 ---
 
@@ -189,9 +247,13 @@ Done:
 - [x] Metadata databases created by a Job in the Postgres app (plain resource, not a hook)
 - [x] Image loading into kind (`make airflow-image`, with the multi-arch fix)
 - [x] Secrets for GCP credentials and Airflow keys (`make airflow-secrets`)
+- [x] Merged to `main`; `airflow-dev` syncs and all pods are healthy
+- [x] Probes and API workers sized for a shared kind node
+- [x] `APPS=` to run only some apps
 
 Not done yet:
-- [ ] Merge `feat/airflow` to `main` and confirm both apps sync healthy
-- [ ] Confirm the migration hook doesn't race the database Job on a fresh cluster
 - [ ] First login and DAG bundles visible in the UI
 - [ ] Run a DAG end to end against BigQuery
+- [ ] Bring up `airflow-prod` and confirm it's healthy
+- [ ] Confirm the migration hook doesn't race the database Job on a fresh cluster
+- [ ] Check CPU use once stable; tune DAG parsing if the DAG processor dominates
