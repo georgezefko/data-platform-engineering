@@ -103,6 +103,15 @@ Two Secrets are created by a script rather than committed. Argo doesn't manage t
 - **`airflow-gcp-adc`**: your gcloud Application Default Credentials, mounted at `/opt/gcp/adc.json` in every component and task pod (`GOOGLE_APPLICATION_CREDENTIALS`), so DAGs can reach BigQuery.
 - **`airflow-keys`**: the fernet, API and JWT keys. If the chart generated them, Argo would rotate them on every sync, and a new fernet key would make stored connections unreadable. The script creates them once and never rotates them.
 
+Where they live, and when to re-run the script:
+
+- **Only in the kind cluster.** They are plain Kubernetes Secrets, not stored in Google Secret Manager, Git or Argo. `airflow-gcp-adc` is a copy of your local ADC file, and `airflow-keys` exists nowhere else.
+- **After `make reset` or `make kind-down`**, both are gone: run `make airflow-secrets` after the next `make up`. The new random keys are fine, because the Airflow databases went with the cluster, so nothing is still encrypted with the old fernet key.
+- **After `gcloud auth application-default login`**, your ADC file changes: re-run `make airflow-secrets` to refresh the copy. It leaves `airflow-keys` alone.
+- **Dev and prod have different keys.** The script generates `airflow-keys` separately per namespace. This matters for the UI login, see [step 5](#5-open-the-ui).
+
+To keep them outside the cluster (to survive rebuilds or share across clusters), the usual next step is the External Secrets Operator syncing from Google Secret Manager. For a local kind setup, the script is enough.
+
 ### Probes sized for a crowded kind node
 
 Airflow 3 is slow to start: every component imports all of Airflow, and the scheduler also imports the DAGs' libraries (Cosmos/dbt). On one kind node shared with the rest of the platform, the chart's default probes killed the pods before they were up. The api-server failed its startup probe with `connection refused` and exited with code 143. The scheduler failed with `No alive jobs found`. Each restart booted Airflow again, which kept the node's CPU high and made the next start even slower.
@@ -219,7 +228,9 @@ On sync, the Postgres app's `airflow-db-init` Job creates `airflow_dev` and `air
 make airflow-ui ENV=dev
 ```
 
-Dev is at http://localhost:8081, prod (`ENV=prod`) at http://localhost:8082. Log in as `admin` / `admin`.
+Dev is at http://127.0.0.1:8081, prod (`ENV=prod`) at http://localhost:8082. Log in as `admin` / `admin`.
+
+> **Why two different hosts?** Browsers don't separate cookies by port. With both UIs on `localhost`, logging in to prod replaced dev's login token. Dev can't verify a token signed with prod's key, so it kept sending you back to the login page well before the 24-hour token expiry (`[api_auth] jwt_expiration_time = 86400`). `127.0.0.1` and `localhost` count as different sites, so each keeps its own cookies.
 
 If it fails with `bind: address already in use`, an earlier port-forward is still running, often in another terminal. Stop it and retry:
 
