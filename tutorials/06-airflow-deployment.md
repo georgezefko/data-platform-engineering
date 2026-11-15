@@ -56,7 +56,9 @@ sources:
 
 - **KubernetesExecutor**: every task runs in its own pod, so no Celery workers or Redis are needed.
 - **No bundled Postgres** (`postgresql.enabled: false`). Airflow uses the platform Postgres in `develop` (`postgres.develop.svc.cluster.local`), with one database per environment: `airflow_dev` and `airflow_prod`.
-- Postgres's `init.sql` only runs on an empty volume, so it can't add databases to a cluster that already exists. A PostSync Job (`apps/postgres/base/airflow-db-job.yaml`) creates the two databases instead, and skips any that already exist.
+- Postgres's `init.sql` only runs on an empty volume, so it can't add databases to a cluster that already exists. A Job in the Postgres app (`apps/postgres/base/airflow-db-job.yaml`) creates the two databases instead, and skips any that already exist.
+
+> **Gotcha:** this was first written as a PostSync hook, and it never ran. Argo doesn't count hooks when it compares Git with the cluster. `postgres-app` was already Synced, so adding the hook created no diff, auto-sync never started, and the hook never fired. With no databases, the Airflow migration job failed until it hit its backoff limit. As a plain resource, the missing Job makes the app OutOfSync, so Argo creates it.
 
 ### Helm hooks as Argo sync hooks
 
@@ -159,7 +161,7 @@ make argo-bootstrap
 make status
 ```
 
-On sync, the Postgres app's PostSync Job creates `airflow_dev` and `airflow_prod`, the migration job runs as a Sync hook, and the admin user is created in PostSync.
+On sync, the Postgres app's `airflow-db-init` Job creates `airflow_dev` and `airflow_prod`, the migration job runs as a Sync hook, and the admin user is created in PostSync. If the migration ran out of retries before the databases existed, re-sync `airflow-dev` and `airflow-prod`: automated sync doesn't retry a failed sync on the same commit.
 
 ### 5. Open the UI
 
@@ -184,7 +186,7 @@ Dev is at http://localhost:8081, prod (`ENV=prod`) at http://localhost:8082. Log
 
 Done:
 - [x] Argo apps for dev and prod, shared and per-env values
-- [x] Metadata databases created by a PostSync Job
+- [x] Metadata databases created by a Job in the Postgres app (plain resource, not a hook)
 - [x] Image loading into kind (`make airflow-image`, with the multi-arch fix)
 - [x] Secrets for GCP credentials and Airflow keys (`make airflow-secrets`)
 
