@@ -68,6 +68,10 @@ apiServer:
     timeoutSeconds: 20
     failureThreshold: 30  # up to 5 min to come up
 scheduler:
+  startupProbe:  # default gave up after ~1-2 min; boot (cosmos/dbt imports) takes longer
+    periodSeconds: 10
+    timeoutSeconds: 60
+    failureThreshold: 30
   livenessProbe:
     initialDelaySeconds: 30
     periodSeconds: 60
