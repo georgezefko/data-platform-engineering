@@ -95,7 +95,8 @@ Kafka itself is inspected by running a temporary debug pod inside the cluster â€
 |---|---|
 | `make status` | Show Argo Application sync status and key namespaces |
 | `make tf-apply` | Re-run Terraform (re-installs/upgrades Argo CD) |
-| `make argo-bootstrap` | Re-apply the app-of-apps manifest |
+| `make argo-bootstrap` | Re-apply the app-of-apps manifest (all apps) |
+| `make argo-bootstrap APPS="postgres airflow-dev"` | Run only these apps; the others are removed with their workloads. Also works with `make up APPS=...` |
 | `make kind-down` | Delete the KinD cluster (keeps Terraform state) |
 | `make reset` | Full tear-down: cluster + Terraform state + kubeconfig |
 

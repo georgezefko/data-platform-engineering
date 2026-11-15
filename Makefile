@@ -9,6 +9,7 @@ help:
 	@echo "Targets:"
 	@echo "  make up            - kind up + terraform apply + apply app-of-apps"
 	@echo "  make tf-apply      - terraform apply only"
+	@echo "  make argo-bootstrap [APPS=\"postgres airflow-dev\"] - deploy all apps, or only these"
 	@echo "  make argo-ui       - port-forward Argo CD UI + print password"
 	@echo "  make status        - show Argo Applications + key namespaces"
 	@echo "  make reset             - delete cluster + clean terraform state (local) + remove repo kubeconfig"
@@ -20,7 +21,7 @@ help:
 	@echo "  make airflow-ui        - port-forward Airflow UI (ENV=dev → :8081, ENV=prod → :8082)"
 
 up:
-	@bash scripts/bootstrap.sh
+	@APPS="$(APPS)" bash scripts/bootstrap.sh
 
 tf-init:
 	@cd $(TF_DIR) && terraform init
@@ -29,7 +30,7 @@ tf-apply:
 	@cd $(TF_DIR) && terraform init && terraform apply -auto-approve
 
 argo-bootstrap:
-	@kubectl apply -f argo/app-of-apps.yaml
+	@bash scripts/argo-apps.sh $(APPS)
 
 argo-ui:
 	@bash scripts/argocd-ui.sh

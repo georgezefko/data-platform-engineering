@@ -4,6 +4,9 @@ kind: Application
 metadata:
   name: kafka-app
   namespace: argocd
+  # removing the Application (e.g. via APPS=) also deletes its workloads
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
