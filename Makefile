@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 CLUSTER_NAME ?= development
 TF_DIR := infra/terraform/environments/dev
 
-.PHONY: help up tf-init tf-apply argo-bootstrap argo-ui status reset kind-down kafka-connect-pf starrocks-pf
+.PHONY: help up tf-init tf-apply argo-bootstrap argo-ui status reset kind-down kafka-connect-pf starrocks-pf airflow-image airflow-secrets airflow-ui
 
 help:
 	@echo "Targets:"
@@ -15,6 +15,9 @@ help:
 	@echo "  make kind-down         - delete kind cluster only"
 	@echo "  make kafka-connect-pf  - port-forward Kafka Connect REST API (localhost:8083)"
 	@echo "  make starrocks-pf      - port-forward StarRocks FE (mysql localhost:9030, http localhost:8030)"
+	@echo "  make airflow-image     - pull + kind-load the Airflow image (TAG=<sha>, default: tags in values)"
+	@echo "  make airflow-secrets   - create Airflow GCP credentials + key Secrets in develop and prod"
+	@echo "  make airflow-ui        - port-forward Airflow UI (ENV=dev → :8081, ENV=prod → :8082)"
 
 up:
 	@bash scripts/bootstrap.sh
@@ -42,6 +45,15 @@ kafka-connect-pf:
 
 starrocks-pf:
 	@bash scripts/starrocks-pf.sh
+
+airflow-image:
+	@bash scripts/airflow-image.sh $(TAG)
+
+airflow-secrets:
+	@bash scripts/airflow-secrets.sh
+
+airflow-ui:
+	@bash scripts/airflow-ui.sh $(ENV)
 
 status:
 	@echo "== Argo Applications =="

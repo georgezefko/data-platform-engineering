@@ -1,0 +1,58 @@
+# Shared by dev and prod. Contract: https://github.com/georgezefko/airflow-monorepo/blob/main/docs/deployment.md
+airflowVersion: "3.3.2"
+executor: KubernetesExecutor
+
+images:
+  airflow:
+    repository: us-central1-docker.pkg.dev/project-09344e23-c1cd-49df-a40/airflow-monorepo/airflow
+    pullPolicy: IfNotPresent  # loaded with `kind load`, never pulled (registry tokens last 1h)
+
+# Metadata DB: the platform Postgres in `develop`; each env has its own database
+postgresql:
+  enabled: false
+data:
+  metadataConnection:
+    user: postgres
+    pass: postgres
+    protocol: postgresql
+    host: postgres.develop.svc.cluster.local
+    port: 5432
+    sslmode: disable
+
+# Argo CD doesn't run Helm hooks the way Helm does: run the jobs as Argo sync hooks instead
+migrateDatabaseJob:
+  useHelmHooks: false
+  applyCustomEnv: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+createUserJob:
+  useHelmHooks: false
+  applyCustomEnv: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+
+statsd:
+  enabled: false
+
+# BigQuery credentials: Secret created by `make airflow-secrets`, never in git.
+# Top-level env/volumes reach every component and the KubernetesExecutor task pods.
+env:
+  - name: GCP_PROJECT
+    value: project-09344e23-c1cd-49df-a40
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: /opt/gcp/adc.json
+volumes:
+  - name: gcp-adc
+    secret:
+      secretName: airflow-gcp-adc
+volumeMounts:
+  - name: gcp-adc
+    mountPath: /opt/gcp
+    readOnly: true
+# Fernet/API/JWT keys: Secret `airflow-keys` created by `make airflow-secrets`, never in git.
+# (If the chart generated them, Argo would rotate them on every sync.)
+fernetKeySecretName: airflow-keys
+apiSecretKeySecretName: airflow-keys
+jwtSecretName: airflow-keys

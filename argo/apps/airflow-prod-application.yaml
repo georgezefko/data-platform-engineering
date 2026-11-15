@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: airflow-prod
+  namespace: argocd
+spec:
+  project: default
+
+  sources:
+    - repoURL: "https://airflow.apache.org"
+      chart: airflow
+      targetRevision: "1.22.0"
+      helm:
+        releaseName: "airflow"
+        valueFiles:
+          - $values/apps/airflow-helm/common/values.yaml
+          - $values/apps/airflow-helm/prod/values.yaml
+
+    # values only (no path): with a path Argo would also apply the folder's files as manifests
+    - repoURL: "https://github.com/georgezefko/data-platform-engineering.git"
+      targetRevision: HEAD
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

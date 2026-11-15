@@ -1,0 +1,21 @@
+# Dev: bundles track main, so a merge in airflow-monorepo goes live with no change here.
+images:
+  airflow:
+    tag: 3.3.2-ed27682  # bump when build.yaml pushes a new airflow:<sha>
+
+data:
+  metadataConnection:
+    db: airflow_dev
+
+
+dagProcessor:
+  dagBundleConfigList:
+    - name: platform
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/platform/dags}
+    - name: sales
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/sales/dags}
+    - name: marketing
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/marketing/dags}
