@@ -9,7 +9,6 @@ mkdir -p "${REPO_ROOT}/.kube"
 
 KIND_UP="${REPO_ROOT}/scripts/kind-up.sh"
 TF_DIR="${REPO_ROOT}/infra/terraform/environments/dev"
-ARGO_BOOTSTRAP="${REPO_ROOT}/argo/app-of-apps.yaml"
 
 if [[ ! -f "${KIND_UP}" ]]; then
   echo "ERROR: kind-up script not found or not executable: ${KIND_UP}" >&2
@@ -26,4 +25,4 @@ terraform init
 terraform apply -auto-approve
 popd >/dev/null
 
-kubectl apply -f "${ARGO_BOOTSTRAP}"
+bash "${REPO_ROOT}/scripts/argo-apps.sh" ${APPS:-}

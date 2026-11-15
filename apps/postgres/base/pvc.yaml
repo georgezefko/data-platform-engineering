@@ -2,6 +2,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data
+  annotations:
+    # keep the data when postgres-app is turned off (its finalizer deletes everything else)
+    argocd.argoproj.io/sync-options: Delete=false
 spec:
   accessModes: 
     - "ReadWriteOnce"

@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 make up              # Full bootstrap: KinD cluster + Terraform (Argo CD) + app-of-apps
 make tf-apply        # Re-run Terraform only (re-installs/upgrades Argo CD Helm release)
-make argo-bootstrap  # Re-apply app-of-apps manifest only
+make argo-bootstrap  # Re-apply app-of-apps manifest only (all apps)
+make argo-bootstrap APPS="postgres airflow-dev"  # Only these apps (names match argo/apps/*<name>*.yaml)
 make status          # Show Argo Application sync status + key namespaces
 make reset           # Tear down cluster, wipe Terraform state, remove kubeconfig
 make kind-down       # Delete KinD cluster only (keeps Terraform state)

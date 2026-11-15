@@ -56,3 +56,20 @@ volumeMounts:
 fernetKeySecretName: airflow-keys
 apiSecretKeySecretName: airflow-keys
 jwtSecretName: airflow-keys
+
+# kind runs dev + prod + the rest of the platform on one node, so Airflow starts slowly.
+# Defaults killed the api-server (startup probe) and scheduler (liveness probe) before they were up.
+config:
+  api:
+    workers: 1  # default 4: each worker imports all of Airflow at startup
+apiServer:
+  startupProbe:
+    periodSeconds: 10
+    timeoutSeconds: 20
+    failureThreshold: 30  # up to 5 min to come up
+scheduler:
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 60
+    timeoutSeconds: 60
+    failureThreshold: 5
