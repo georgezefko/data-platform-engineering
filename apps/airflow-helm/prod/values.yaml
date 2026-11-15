@@ -1,7 +1,7 @@
 # Prod: each team pinned to its release tag. A release = change that team's tracking_ref, nothing else.
 images:
   airflow:
-    tag: d74679672269a6e09c176192ad4699e82ea444ae  # promoted from dev by hand
+    tag: 3.3.2-ed27682 # promoted from dev by hand
 
 data:
   metadataConnection:
