@@ -7,6 +7,12 @@ data:
   metadataConnection:
     db: airflow_prod
 
+
+config:
+  logging:
+    remote_logging: "True"
+    remote_base_log_folder: gs://project-09344e23-c1cd-49df-a40-airflow-logs/prod
+
 dagProcessor:
   dagBundleConfigList:
     - name: platform
