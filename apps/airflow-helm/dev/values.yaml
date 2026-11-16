@@ -19,3 +19,11 @@ dagProcessor:
     - name: marketing
       classpath: airflow.providers.git.bundles.git.GitDagBundle
       kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: main, subdir: teams/marketing/dags}
+       
+    # spike: remove after the platform-lib spike
+    - name: spike_a
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: spike-v1, subdir: teams/spike_a/dags}
+    - name: spike_b
+      classpath: airflow.providers.git.bundles.git.GitDagBundle
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: spike/platform-lib, subdir: teams/spike_b/dags}
