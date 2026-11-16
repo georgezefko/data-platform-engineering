@@ -1,7 +1,7 @@
 # Dev: bundles track main, so a merge in airflow-monorepo goes live with no change here.
 images:
   airflow:
-    tag: 3.3.2-ed27682  # bump when build.yaml pushes a new airflow:<sha>
+    tag: 3.3.2-385e98c  # bump when build.yaml pushes a new airflow:<sha>
 
 data:
   metadataConnection:
