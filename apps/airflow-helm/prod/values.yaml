@@ -17,10 +17,10 @@ dagProcessor:
   dagBundleConfigList:
     - name: platform
       classpath: airflow.providers.git.bundles.git.GitDagBundle
-      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: platform-v1.1.0, subdir: teams/platform/dags}  # no platform-v* tag yet
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: platform-v1.2.0, subdir: teams/platform/dags}  # no platform-v* tag yet
     - name: sales
       classpath: airflow.providers.git.bundles.git.GitDagBundle
-      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: sales-v1.1.0, subdir: teams/sales/dags}
+      kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: sales-v1.2.0, subdir: teams/sales/dags}
     - name: marketing
       classpath: airflow.providers.git.bundles.git.GitDagBundle
       kwargs: {repo_url: "https://github.com/georgezefko/airflow-monorepo.git", tracking_ref: marketing-v1.1.0, subdir: teams/marketing/dags}  # no marketing-v* tag yet

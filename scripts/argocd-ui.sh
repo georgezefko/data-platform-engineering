@@ -3,7 +3,7 @@ set -euo pipefail
 
 NS="argocd"
 SVC="argocd-server"
-LOCAL_PORT="${1:-8081}"
+LOCAL_PORT="${1:-8080}"
 
 echo "Argo CD UI: http://localhost:${LOCAL_PORT}"
 echo "Username: admin"
