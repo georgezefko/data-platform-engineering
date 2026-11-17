@@ -12,6 +12,8 @@ config:
   logging:
     remote_logging: "True"
     remote_base_log_folder: gs://project-09344e23-c1cd-49df-a40-airflow-logs/prod
+  apps:
+    data_folder: gs://project-09344e23-c1cd-49df-a40-airflow-data/prod
 
 dagProcessor:
   dagBundleConfigList:
