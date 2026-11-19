@@ -7,13 +7,16 @@
 set -euo pipefail
 # 32 random bytes, url-safe base64: the fernet key format (also fine for the API/JWT keys)
 key() { head -c 32 /dev/urandom | base64 | tr '+/' '-_'; }
+# Prod lives in its own GCP project: PROD_ADC lets it use different credentials (defaults to ADC).
 ADC="${ADC:-$HOME/.config/gcloud/application_default_credentials.json}"
-[[ -f "$ADC" ]] || { echo "No ADC file at $ADC. Run: gcloud auth application-default login" >&2; exit 1; }
+PROD_ADC="${PROD_ADC:-$ADC}"
 
 for ns in develop prod; do
+  adc=$ADC; [[ $ns == prod ]] && adc=$PROD_ADC
+  [[ -f "$adc" ]] || { echo "No ADC file at $adc. Run: gcloud auth application-default login" >&2; exit 1; }
   kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
 
-  kubectl -n "$ns" create secret generic airflow-gcp-adc --from-file=adc.json="$ADC" \
+  kubectl -n "$ns" create secret generic airflow-gcp-adc --from-file=adc.json="$adc" \
     --dry-run=client -o yaml | kubectl apply -f -
 
   if ! kubectl -n "$ns" get secret airflow-keys >/dev/null 2>&1; then

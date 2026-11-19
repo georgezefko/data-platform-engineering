@@ -11,7 +11,8 @@ REGISTRY=us-central1-docker.pkg.dev
 MONOREPO_URL=https://github.com/georgezefko/airflow-monorepo.git
 CLONE="${TMPDIR:-/tmp}/airflow-monorepo.git"  # kept between runs, so only new commits are fetched
 
-images=$(awk -v img="$REGISTRY/project-09344e23-c1cd-49df-a40/airflow-monorepo/airflow" '/^    tag:/ {print img ":" $2}' $VALUES)
+# each env pulls from its own project's registry: repository + tag from its values file
+images=$(awk '/^    repository:/ {r=$2} /^    tag:/ {print r ":" $2}' $VALUES)
 
 [[ -d "$CLONE" ]] || git clone -q --bare "$MONOREPO_URL" "$CLONE"
 git -C "$CLONE" fetch -q --prune origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'

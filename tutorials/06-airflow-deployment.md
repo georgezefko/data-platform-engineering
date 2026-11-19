@@ -192,7 +192,7 @@ docker save "$IMAGE:$tag" | docker exec -i "$node" ctr --namespace=k8s.io images
 make airflow-secrets
 ```
 
-In both `develop` and `prod`, this creates the namespace if it's missing, applies `airflow-gcp-adc` from your ADC file (re-running refreshes it), and creates `airflow-keys` only if it doesn't exist yet. Use a different ADC file with `ADC=/path/to/file.json make airflow-secrets`.
+In both `develop` and `prod`, this creates the namespace if it's missing, applies `airflow-gcp-adc` from your ADC file (re-running refreshes it), and creates `airflow-keys` only if it doesn't exist yet. Use a different ADC file with `ADC=/path/to/file.json make airflow-secrets`; give prod (its own GCP project) separate credentials with `PROD_ADC=/path/to/prod.json`.
 
 ### 4. Deploy through Argo CD
 

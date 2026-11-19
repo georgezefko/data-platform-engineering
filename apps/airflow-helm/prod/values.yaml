@@ -1,19 +1,27 @@
 # Prod: each team pinned to its release tag. A release = change that team's tracking_ref, nothing else.
 images:
   airflow:
+    repository: us-central1-docker.pkg.dev/tutorials-demo-prod/airflow-monorepo/airflow
     tag: 3.3.2-385e98c # promoted from dev by hand
 
 data:
   metadataConnection:
     db: airflow_prod
 
+# Prod's own GCP project: same dataset names as dev, so dev never touches prod's tables.
+env:
+  - name: GCP_PROJECT
+    value: tutorials-demo-prod
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: /opt/gcp/adc.json
+
 
 config:
   logging:
     remote_logging: "True"
-    remote_base_log_folder: gs://project-09344e23-c1cd-49df-a40-airflow-logs/prod
+    remote_base_log_folder: gs://tutorials-demo-prod-airflow-logs/prod
   apps:
-    data_folder: gs://project-09344e23-c1cd-49df-a40-airflow-data/prod
+    data_folder: gs://tutorials-demo-prod-airflow-data/prod
 
 dagProcessor:
   dagBundleConfigList:

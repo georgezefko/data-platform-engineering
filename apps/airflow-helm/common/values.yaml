@@ -4,7 +4,7 @@ executor: KubernetesExecutor
 
 images:
   airflow:
-    repository: us-central1-docker.pkg.dev/project-09344e23-c1cd-49df-a40/airflow-monorepo/airflow
+    # repository is per env (each env's own GCP project registry)
     pullPolicy: IfNotPresent  # loaded with `kind load`, never pulled (registry tokens last 1h)
 
 # Metadata DB: the platform Postgres in `develop`; each env has its own database
@@ -38,11 +38,6 @@ statsd:
 
 # BigQuery credentials: Secret created by `make airflow-secrets`, never in git.
 # Top-level env/volumes reach every component and the KubernetesExecutor task pods.
-env:
-  - name: GCP_PROJECT
-    value: project-09344e23-c1cd-49df-a40
-  - name: GOOGLE_APPLICATION_CREDENTIALS
-    value: /opt/gcp/adc.json
 volumes:
   - name: gcp-adc
     secret:

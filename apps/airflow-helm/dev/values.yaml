@@ -1,11 +1,18 @@
 # Dev: bundles track main, so a merge in airflow-monorepo goes live with no change here.
 images:
   airflow:
+    repository: us-central1-docker.pkg.dev/project-09344e23-c1cd-49df-a40/airflow-monorepo/airflow
     tag: 3.3.2-385e98c  # bump when build.yaml pushes a new airflow:<sha>
 
 data:
   metadataConnection:
     db: airflow_dev
+
+env:
+  - name: GCP_PROJECT
+    value: project-09344e23-c1cd-49df-a40
+  - name: GOOGLE_APPLICATION_CREDENTIALS
+    value: /opt/gcp/adc.json
 
 config:
   logging:
@@ -15,8 +22,6 @@ config:
     data_folder: gs://project-09344e23-c1cd-49df-a40-airflow-data/dev
   platform:
     version_tag: main
-
-
 
 
 dagProcessor:
