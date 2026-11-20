@@ -2,7 +2,7 @@
 images:
   airflow:
     repository: us-central1-docker.pkg.dev/tutorials-demo-prod/airflow-monorepo/airflow
-    tag: 3.3.2-385e98c # promoted from dev by hand
+    tag: 3.3.2-60d6d3f # promoted from dev by hand
 
 data:
   metadataConnection:

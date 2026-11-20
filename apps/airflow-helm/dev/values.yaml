@@ -2,7 +2,7 @@
 images:
   airflow:
     repository: us-central1-docker.pkg.dev/project-09344e23-c1cd-49df-a40/airflow-monorepo/airflow
-    tag: 3.3.2-385e98c  # bump when build.yaml pushes a new airflow:<sha>
+    tag: 3.3.2-60d6d3f  # bump when build.yaml pushes a new airflow:<sha>
 
 data:
   metadataConnection:
