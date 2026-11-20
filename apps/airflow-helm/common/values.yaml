@@ -57,6 +57,17 @@ jwtSecretName: airflow-keys
 config:
   api:
     workers: 1  # default 4: each worker imports all of Airflow at startup
+  # Cosmos runs `dbt ls` while a dbt DAG file imports: slower than the 30s default on a busy
+  # kind node, more so with a cold cache after a restart.
+  core:
+    dagbag_import_timeout: 120
+  dag_processor:
+    dag_file_processor_timeout: 180  # must stay above dagbag_import_timeout
+    # Lighter on kind: re-import each DAG file every 5 min (default 30s, and each import of a
+    # Cosmos DAG can run `dbt ls`), one parsing process (default 2). A merge to main can take up
+    # to 5 min to show in dev.
+    min_file_process_interval: 300
+    parsing_processes: 1
 apiServer:
   startupProbe:
     periodSeconds: 10
@@ -72,3 +83,8 @@ scheduler:
     periodSeconds: 60
     timeoutSeconds: 60
     failureThreshold: 5
+
+# No DAG uses deferrable operators (app_task's KubernetesPodOperator and Cosmos don't defer), so
+# the triggerer would sit idle. Re-enable it if a DAG starts deferring: its tasks would hang.
+triggerer:
+  enabled: false
